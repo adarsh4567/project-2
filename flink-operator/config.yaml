@@ -1,0 +1,61 @@
+# JobManager configuration
+jobmanager:
+  rpc:
+    address: localhost
+    port: 6123
+  memory:
+    process:
+      size: 1024m
+
+# TaskManager configuration
+taskmanager:
+  rpc:
+    port: 6122
+  memory:
+    process:
+      size: 1024m
+  numberOfTaskSlots: 2
+
+# Default parallelism
+parallelism:
+  default: 2
+
+# State backend & checkpointing
+state:
+  backend: rocksdb
+  checkpoints:
+    dir: file:///tmp/checkpoints
+  savepoints:
+    dir: file:///tmp/savepoints
+
+execution:
+  checkpointing:
+    interval: 60s
+    mode: EXACTLY_ONCE
+
+restart-strategy: fixed-delay
+restart-strategy.fixed-delay:
+  attempts: 3
+  delay: 10s
+
+# Web / REST API
+rest:
+  address: 0.0.0.0
+  port: 8081
+
+# High Availability (optional, if you configure ZooKeeper or Kubernetes HA)
+# high-availability:
+#   mode: zookeeper
+#   zookeeper:
+#     quorum: zookeeper:2181
+#     path: /flink
+#   storageDir: file:///tmp/flink/recovery
+
+# Logging
+env:
+  log:
+    dir: /var/log/flink
+
+# Python support for PyFlink
+python:
+  executable: python3

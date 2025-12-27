@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-server
+  namespace: event-server
+  labels:
+    app: event-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: event-server
+  template:
+    metadata:
+      labels:
+        app: event-server
+    spec:
+      containers:
+      - name: event-server
+        image: event-server:latest   # replace with your image name
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PORT
+          value: "3000"

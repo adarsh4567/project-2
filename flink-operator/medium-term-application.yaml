@@ -1,0 +1,76 @@
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkDeployment
+metadata:
+  name: medium-term-pyflink-job
+  namespace: flink
+spec:
+  image: custom-pyflink:latest # Custom image with PyFlink + Kafka connector JAR
+  imagePullPolicy: IfNotPresent
+  flinkVersion: v1_18 
+  serviceAccount: flink-service-account
+  ingress:
+    template: "{{name}}.{{namespace}}.flink.k8s.io"
+    className: "nginx"
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: "/"
+  flinkConfiguration:
+    # Minimal configuration for development
+    taskmanager.numberOfTaskSlots: "2"
+    parallelism.default: "1"
+    
+    # Reduced memory configuration for efficient resource usage
+    jobmanager.memory.process.size: "1024m"
+    taskmanager.memory.process.size: "2048m"
+    taskmanager.memory.managed.size: "512m"
+    
+    # State backend and checkpointing - optimized for development
+    state.backend: "rocksdb"                    # Better for windowing with state
+    state.checkpoints.dir: "file:///tmp/checkpoints"
+    state.savepoints.dir: "file:///tmp/savepoints"
+    execution.checkpointing.interval: "300s"   # 5 minutes
+    execution.checkpointing.mode: "EXACTLY_ONCE"  # Less overhead
+    
+    
+    # Restart strategy
+    restart-strategy.type: "fixed-delay"
+    restart-strategy.fixed-delay.attempts: "2"
+    restart-strategy.fixed-delay.delay: "10s"
+    
+    # Network optimizations
+    taskmanager.network.memory.fraction: "0.1"
+    taskmanager.network.memory.min: "64mb"
+    taskmanager.network.memory.max: "128mb"
+    
+  jobManager:
+    resource:
+      memory: "1024m"
+      cpu: 0.5
+    replicas: 1
+    
+  taskManager:
+    resource:
+      memory: "2048m"
+      cpu: 1
+    replicas: 1
+    
+  job:
+    jarURI: local:///opt/flink/usrlib/medium_term_process.py
+    entryClass: "org.apache.flink.client.python.PythonDriver"
+    args: ["-py", "/opt/flink/usrlib/medium_term_process.py"]
+    parallelism: 1
+    upgradeMode: stateless
+    
+  podTemplate:
+    spec:
+      containers:
+        - name: flink-main-container
+          env:
+            - name: PYFLINK_PYTHON
+              value: "python3"
+          resources:
+            requests:
+              memory: "2048Mi"
+              cpu: "1"
+            limits:
+              memory: "2560Mi"  # 25% overhead
+              cpu: "1.5"
